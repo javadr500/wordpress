@@ -1,0 +1,85 @@
+
+# docker-compose -p sepehrtaamol.com -f docker-compose.yml up -d
+
+
+version: '3.4'
+
+
+networks:
+  wordpress-vpc:
+    driver: bridge
+
+services:
+  # mariadb:
+  #   image: 'mariadb:latest'
+  #   container_name: mariadb
+  #   environment:
+  #     - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD}
+  #     - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+  #     - MARIADB_USER=${MARIADB_USER}
+  #     - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+  #     - MARIADB_DATABASE=${MARIADB_DATABASE}
+  #   volumes:
+  #     - mariadb:/var/lib//mariadb
+
+  mysql:
+    image: 'mysql:5.7'
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - ${MYSQL_PORT}:3306
+    volumes:
+      - mysql:/var/lib/mysql
+    networks:
+      - wordpress-vpc
+
+  phpmyadmin:
+    image: 'phpmyadmin:latest'
+    container_name: phpmyadmin
+    depends_on:
+      - mysql
+    links:
+      - mysql:mysql
+    environment:
+      MYSQL_USERNAME: "${MYSQL_USER}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      PMA_HOST: mysql
+      UPLOAD_LIMIT: 300M
+    ports:
+      - '${PHPMYADMIN_HTTP_PORT}:80'
+      - '${PHPMYADMIN_HTTPS_PORT}:443'
+    volumes:
+      - phpmyadmin:/var/lib//phpmyadmin
+    networks:
+      - wordpress-vpc
+
+  wordpress:
+    image: 'wordpress:php7.4'
+    container_name: wordpress
+    restart: always
+    depends_on:
+      - mysql  
+    links:
+      - mysql:mysql
+    ports:
+      - '${WORDPRESS_HTTP_PORT}:80'
+      - '${WORDPRESS_HTTPS_PORT}:443'
+    environment:
+       WORDPRESS_DB_HOST: mysql
+       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DATABASE_PASSWORD}
+       WORDPRESS_DB_USER: ${WORDPRESS_DATABASE_USER}
+       WORDPRESS_DB_NAME: ${WORDPRESS_DATABASE_NAME}
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - wordpress-vpc
+
+volumes:
+  mysql:
+  phpmyadmin:
+  wordpress:
